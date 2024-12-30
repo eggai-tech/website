@@ -13,13 +13,13 @@ This repository contains the source code for the EggAI Technologies GmbH website
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/eggai-tech/eggai-website.git
+git clone git@github.com:eggai-tech/website.git
 ```
 
 2. Navigate to the project directory:
 
 ```bash
-cd eggai-website
+cd website
 ```
 
 3. Serve the website locally:
