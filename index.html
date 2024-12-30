@@ -22,14 +22,29 @@
         },
       };
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #bgCanvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+        opacity: 0.1;
+      }
+    </style>
   </head>
 
-  <body class="bg-gray-100">
-    <main class="py-16 px-4">
-      <header
-        class="container max-w-2xl flex flex-col  gap-8 mx-auto"
-      >
-        <div class=" flex flex-row items-center gap-2">
+  <body class="bg-gray-100 relative">
+    <main class="py-8 md:py-16 px-4">
+      <header class="container max-w-2xl flex flex-col gap-8 mx-auto">
+        <div class="flex flex-row items-center gap-2">
           <img src="assets/egg-ai-logo.svg" alt="" class="w-7 h-7" />
           <span class="text-2xl">EggAI</span>
         </div>
@@ -40,8 +55,8 @@
         class="prose text-xl max-w-2xl mx-auto pt-8 text-black leading-snug"
       >
         <p>
-          <b>EggAI</b> is a team of top-tier AI engineers and
-          transformation practitioners.
+          <b>EggAI</b> is a team of top-tier AI engineers and transformation
+          practitioners.
         </p>
         <p>
           We help large organizations to scale generative and classic AI
@@ -86,5 +101,140 @@
         </div>
       </article>
     </main>
+
+    <script>
+      let bgCanvas;
+      let polygons = [];
+      let howMany = 10; // Number of polygons
+      let backgroundAlpha = 10; // Controls the trailing/fade effect
+
+      // We'll define a 'fadeRadius' — inside this radius from the center,
+      // polygons fade out. Outside, they're fully visible.
+      let fadeRadius;
+
+      function setup() {
+        bgCanvas = createCanvas(windowWidth, windowHeight);
+        bgCanvas.id("bgCanvas"); // Keep this ID per your request
+
+        // We can pick half the smallest dimension as our fade radius
+        fadeRadius = min(width, height) * 0.8;
+
+        // Create initial set of polygons
+        for (let i = 0; i < howMany; i++) {
+          polygons.push(new AnimPoly());
+        }
+
+        // Draw an initial white background
+        background(255);
+      }
+
+      function draw() {
+        // Semi-transparent white rect to create a fade/trail effect
+        fill(255, backgroundAlpha);
+        noStroke();
+        rect(0, 0, width, height);
+
+        // Update and draw polygons
+        for (let poly of polygons) {
+          poly.update();
+          poly.show();
+        }
+      }
+
+      function windowResized() {
+        resizeCanvas(windowWidth, windowHeight);
+        fadeRadius = min(width, height) * 0.4; // recalc fadeRadius
+        background(255);
+      }
+
+      // A single polygon class
+      class AnimPoly {
+        constructor() {
+          // Random initial position
+          this.x = random(width);
+          this.y = random(height);
+
+          // Random velocity
+          // Reduce these if you want even slower motion
+          this.vx = random(-0.15, 0.1);
+          this.vy = random(-0.15, 0.1);
+
+          // 3 to 7 sides
+          this.sides = floor(random(3, 8));
+
+          // Rotation
+          this.rotation = 0;
+          // Slow down rotation if desired
+          this.rotationSpeed = random(-0.002, 0.002);
+
+          // Base radius and pulsation
+          this.baseRadius = random(
+            min(width, height) * 0.03,
+            min(width, height) * 0.25
+          );
+          this.radius = this.baseRadius;
+          this.timeOffset = random(1000);
+          // Lower this range if you want slower pulsation
+          this.pulseSpeed = random(0.005, 0.02);
+
+          // Monotone stroke alpha (lighter strokes to darker)
+          this.strokeAlpha = random(40, 120);
+        }
+
+        update() {
+          // Move
+          this.x += this.vx * deltaTime;
+          this.y += this.vy * deltaTime;
+
+          // Bounce at edges
+          if (this.x < 0 || this.x > width) {
+            this.vx *= -1;
+          }
+          if (this.y < 0 || this.y > height) {
+            this.vy *= -1;
+          }
+
+          // Rotate
+          this.rotation += this.rotationSpeed * deltaTime;
+
+          // Pulsate
+          let mult = sin(this.pulseSpeed * (frameCount + this.timeOffset));
+          this.radius = lerp(
+            this.baseRadius * 0.5,
+            this.baseRadius,
+            (mult + 1) / 2
+          );
+        }
+
+        show() {
+          // Calculate distance from center
+          let d = dist(this.x, this.y, width / 2, height / 2);
+
+          // Map distance 0..fadeRadius --> alphaFactor 0..1
+          // So inside fadeRadius, polygons fade out (center => alpha=0),
+          // outside fadeRadius => alphaFactor=1 (no fade)
+          let alphaFactor = map(d, 0, fadeRadius, 0, 1);
+          alphaFactor = constrain(alphaFactor, 0, 1);
+
+          // Multiply strokeAlpha by alphaFactor
+          let currentAlpha = this.strokeAlpha * alphaFactor;
+
+          push();
+          translate(this.x, this.y);
+          rotate(this.rotation);
+          stroke(0, currentAlpha);
+          noFill();
+          let angleStep = TWO_PI / this.sides;
+          beginShape();
+          for (let a = 0; a < TWO_PI; a += angleStep) {
+            let vx = this.radius * cos(a);
+            let vy = this.radius * sin(a);
+            vertex(vx, vy);
+          }
+          endShape(CLOSE);
+          pop();
+        }
+      }
+    </script>
   </body>
 </html>
